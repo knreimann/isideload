@@ -241,4 +241,31 @@ impl AppId {
 
         Ok(())
     }
+
+    /// Schaltet HealthKit für die App-ID frei (Feature-Code HK421J6T7P), damit das
+    /// Provisioning Profile die HealthKit-Berechtigung enthält. Laut Apple auch für
+    /// kostenlose Konten erlaubt. Idee aus Charles-Ngg/isideload-healthkit.
+    pub async fn ensure_healthkit_feature(
+        &mut self,
+        dev_session: &mut DeveloperSession,
+        team: &DeveloperTeam,
+    ) -> Result<(), Report> {
+        let aktiv = self
+            .features
+            .get("HK421J6T7P")
+            .and_then(|value| value.as_boolean())
+            .unwrap_or(false);
+
+        if !aktiv {
+            let body = plist!(dict {
+                "HK421J6T7P": true,
+            });
+            self.features = dev_session
+                .update_app_id(team, self, body, None)
+                .await?
+                .features;
+        }
+
+        Ok(())
+    }
 }

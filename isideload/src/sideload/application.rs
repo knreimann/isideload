@@ -137,6 +137,13 @@ impl Application {
         None
     }
 
+    /// Ob die App Health nutzen will. Unsignierte IPAs aus CI tragen keine Entitlements,
+    /// der Zweck-Text in der Info.plist ist das verlässliche Signal.
+    pub fn requests_healthkit(&self) -> bool {
+        self.bundle.app_info.contains_key("NSHealthShareUsageDescription")
+            || self.bundle.app_info.contains_key("NSHealthUpdateUsageDescription")
+    }
+
     pub fn main_bundle_id(&self) -> Result<String, Report> {
         let str = self
             .bundle

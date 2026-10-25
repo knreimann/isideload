@@ -118,6 +118,18 @@ impl<C: MaxCertsCallback, E: ExtensionsBehaviorCallback> Sideloader<C, E> {
         let mut app_ids = app
             .register_app_ids(&extensions_behavior, &mut self.dev_session, &team)
             .await?;
+
+        // HealthKit freischalten, bevor die Profile geladen werden, sonst fehlt die Berechtigung
+        if app.requests_healthkit() {
+            for app_id in app_ids.iter_mut() {
+                info!("HealthKit für {} freischalten", app_id.identifier);
+                app_id
+                    .ensure_healthkit_feature(&mut self.dev_session, &team)
+                    .await
+                    .context("Failed to enable HealthKit capability")?;
+            }
+        }
+
         let main_app_id = match app_ids
             .iter()
             .find(|app_id| app_id.identifier == main_app_id_str)

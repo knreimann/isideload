@@ -30,10 +30,15 @@ async fn main() {
     let apple_id = args
         .get(1)
         .expect("Please provide the Apple ID to use for installation");
-    let apple_password = args.get(2).expect("Please provide the Apple ID password");
+    // Aufruf: minimal.exe <Apple-ID> <Pfad zur IPA>. Das Passwort wird abgefragt,
+    // damit es nicht im Verlauf der Kommandozeile landet.
     let app_path = PathBuf::from(
-        args.get(3).unwrap_or(&"".to_string()), // .expect("Please provide the path to the app to install"),
+        args.get(2).expect("Bitte den Pfad zur IPA-Datei angeben"),
     );
+    println!("Passwort der Apple-ID {}:", apple_id);
+    let mut apple_password = String::new();
+    std::io::stdin().read_line(&mut apple_password).unwrap();
+    let apple_password = apple_password.trim().to_string();
 
     let get_2fa_code = async |params: TwoFactorCallbackParams| {
         let mut code = String::new();
@@ -107,11 +112,13 @@ async fn main() {
 
     let account = AppleAccount::builder(apple_id)
         .anisette_provider(
+            // Mac-Anisette wie iloader 2.4.0: Apple lehnt seit Oktober 2026 die Android-Variante ab
             RemoteV3AnisetteProvider::default()
                 .unwrap()
+                .set_url("https://mac-ani.jkcoxson.com")
                 .set_serial_number("2".to_string()),
         )
-        .login(apple_password, get_2fa_code)
+        .login(&apple_password, get_2fa_code)
         .await;
 
     let mut account = account.unwrap();
